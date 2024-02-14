@@ -13,13 +13,15 @@ fn main() {
     let winnings : u64= hands.iter().enumerate().map(|(rank, hand)| (rank as u64 + 1) * hand.bid ).sum();
     println!("{:?}", winnings);
 
-
     let mut hands : Vec<_> = lines.iter().map(|line| Hand::from_str(line).unwrap()).collect();
-    hands.sort_by_key(|x| (HandType::from_part_2(&x.cards).rank(), x.cards));
+    hands.sort_by_key(|x| {
+        (
+            HandType::from_part_2(&x.cards).rank(),
+            x.cards.iter().map(Card::rank2).collect::<Vec<_>>(),
+        )
+    });
     let winnings : u64= hands.iter().enumerate().map(|(rank, hand)| (rank as u64 + 1) * hand.bid ).sum();
-    println!("{:?}", winnings)
-
-
+    println!("{:?}", winnings);
 
 }
 
