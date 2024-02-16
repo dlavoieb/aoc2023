@@ -5,12 +5,16 @@ use utils::read_file;
 fn main() {
     let lines = read_file("day-08/src/input.txt");
 
-    let (instructions, nodes) = parse_file_p1(lines);
+    let (instructions, nodes) = parse_file_p1(&lines);
     let steps = run_instructions_p1(&instructions, nodes);
+    println!("Steps needed: {}", steps);
+
+    let (instructions, nodes) = parse_file_p2(&lines);
+    let steps = run_instructions_p2(&instructions, nodes);
     println!("Steps needed: {}", steps);
 }
 
-fn parse_file_p1(lines: Vec<String>) -> (Vec<Instruction>, HashMap<String, (String, String)>) {
+fn parse_file_p1(lines: &Vec<String>) -> (Vec<Instruction>, HashMap<String, (String, String)>) {
     let instructions = lines[0].chars();
     let instructions: Vec<_> = instructions.into_iter().map(|c| Instruction::try_from(c).unwrap()).collect();
 
@@ -18,11 +22,11 @@ fn parse_file_p1(lines: Vec<String>) -> (Vec<Instruction>, HashMap<String, (Stri
     (instructions, nodes)
 }
 
-fn parse_file_p2(lines: Vec<String>) -> (Vec<Instruction>, HashMap<Node, (Node, Node)>) {
+fn parse_file_p2(lines: &Vec<String>) -> (Vec<Instruction>, HashMap<Node, (Node, Node)>) {
     let instructions = lines[0].chars();
     let instructions: Vec<_> = instructions.into_iter().map(|c| Instruction::try_from(c).unwrap()).collect();
 
-    let nodes = lines[2..lines.len()].iter().map(|line| (from_str(&line[0..3]).unwrap(), (from_str(&line[7..10]).unwrap(), from_str(&line[12..15]).unwrap()))).collect::<HashMap<_, _>>();
+    let nodes = lines[2..lines.len()].iter().map(|line| (Node::from_str(&line[0..3]).unwrap(), (Node::from_str(&line[7..10]).unwrap(), Node::from_str(&line[12..15]).unwrap()))).collect::<HashMap<_, _>>();
     (instructions, nodes)
 }
 
@@ -45,13 +49,52 @@ fn run_instructions_p1(instructions: &Vec<Instruction>, nodes: HashMap<String, (
     }
 }
 
-type Node = [char;3];
+fn run_instructions_p2(instructions: &Vec<Instruction>,  nodes: HashMap<Node, (Node, Node)>) -> i32{
+    let mut steps = 0;
 
-fn from_str(s: &str) -> Option<Node> {
-    if s.len() != 3 {
-        return None
+    let mut starting_nodes: Vec<_> = nodes.keys().filter(|c|c.is_starting_position()).collect();
+    loop {
+        for instruction in instructions {
+            steps += 1;
+            let mut new_nodes = Vec::new();
+            for starting_node in starting_nodes {
+                let (left, right) = &nodes.get(starting_node).unwrap();
+                new_nodes.push(
+                    match instruction {
+                        Instruction::Left => { left }
+                        Instruction::Right => { right }
+                    });
+            }
+            starting_nodes = new_nodes;
+            if starting_nodes.iter().filter(|node|!node.is_end_position()).count() == 0 {
+                return steps;
+            }
+        }
     }
-    Some(s.chars().collect::<Vec<_>>().try_into().unwrap() )
+}
+#[derive(Hash, Eq, PartialEq, Debug)]
+struct Node {
+    letters: [char;3]
+}
+
+impl FromStr for Node {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        if s.len() != 3 {
+            return Err(())
+        }
+        Ok(Node{letters:s.chars().collect::<Vec<_>>().try_into().unwrap()})
+    }
+}
+
+impl Node {
+    fn is_starting_position(&self) -> bool {
+        self.letters[2] == 'A'
+    }
+    fn is_end_position(&self) -> bool {
+        self.letters[2] == 'Z'
+    }
 }
 
 
@@ -89,7 +132,7 @@ ZZZ = (ZZZ, ZZZ)";
     #[test]
     fn test_simple() {
         let lines:Vec<_> = INPUT.split('\n').map(|l| l.to_string()).collect();
-        let (instructions, nodes) = parse_file_p1(lines);
+        let (instructions, nodes) = parse_file_p1(&lines);
 
         assert_eq!(instructions.len(), 2);
         assert_eq!(nodes.len(), 7);
@@ -98,9 +141,34 @@ ZZZ = (ZZZ, ZZZ)";
     #[test]
     fn test_run() {
         let lines:Vec<_> = INPUT.split('\n').map(|l| l.to_string()).collect();
-        let (instructions, nodes) = parse_file_p1(lines);
+        let (instructions, nodes) = parse_file_p1(&lines);
 
         let steps = run_instructions_p1(&instructions, nodes);
         assert_eq!(steps, 2);
+    }
+
+    #[test]
+    fn starting_nodes() {
+        let lines:Vec<_> = INPUT.split('\n').map(|l| l.to_string()).collect();
+        let (instructions, nodes) = parse_file_p2(&lines);
+        let starting_nodes: Vec<_> = nodes.keys().filter(|c|c.is_starting_position()).collect();
+        assert_eq!(starting_nodes.len(), 1);
+    }
+    #[test]
+    fn p2() {
+        let lines:Vec<_> = "LR
+
+11A = (11B, XXX)
+11B = (XXX, 11Z)
+11Z = (11B, XXX)
+22A = (22B, XXX)
+22B = (22C, 22C)
+22C = (22Z, 22Z)
+22Z = (22B, 22B)
+XXX = (XXX, XXX)".split('\n').map(|l| l.to_string()).collect();
+        let (instructions, nodes) = parse_file_p2(&lines);
+        let steps = run_instructions_p2(&instructions, nodes);
+        assert_eq!(steps, 6);
+
     }
 }
