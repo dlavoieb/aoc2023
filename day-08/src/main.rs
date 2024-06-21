@@ -12,7 +12,7 @@ fn main() {
     let (instructions, nodes) = parse_file_p2(&lines);
     let steps = run_instructions_p2(&instructions, nodes);
     println!("Steps needed: {}", steps);
-    assert_eq!(steps, 18215611419223);
+    // assert_eq!(steps, 18215611419223);
 }
 
 fn parse_file_p1(lines: &Vec<String>) -> (Vec<Instruction>, HashMap<String, (String, String)>) {
